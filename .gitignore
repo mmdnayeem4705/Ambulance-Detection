@@ -1,0 +1,46 @@
+.venv/
+__pycache__/
+dataset/
+uploads/
+static/results/
+*.mp4
+*.jpg
+*.png
+*.pt
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+yolo_env/
+
+# YOLO outputs
+runs/
+detections/
+*.pt
+*.onnx
+*.engine
+
+# Dataset (if large)
+# dataset/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs
+*.log

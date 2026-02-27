@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traffic Control System - Ambulance Path Clearing</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 1.1em;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .panel h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            color: #2c3e50;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .input-group input,
+        .input-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus,
+        .input-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #ecf0f1;
+            color: #2c3e50;
+        }
+
+        .btn-secondary:hover {
+            background: #bdc3c7;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+        }
+
+        .ambulance-list {
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .ambulance-item {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid #e74c3c;
+        }
+
+        .ambulance-item strong {
+            color: #2c3e50;
+        }
+
+        .ambulance-item .road-num {
+            background: #e74c3c;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        /* Visualization */
+        .visualization {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .road-row {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .road-row.active {
+            background: #e8f4f8;
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+
+        .road-label {
+            min-width: 100px;
+            font-weight: 600;
+            color: #2c3e50;
+            text-align: center;
+        }
+
+        .traffic-light-container {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .traffic-light {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #bdc3c7;
+            border: 2px solid #555;
+            transition: all 0.5s;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .traffic-light.red {
+            background: #e74c3c;
+            box-shadow: 0 0 15px rgba(231, 76, 60, 0.6);
+        }
+
+        .traffic-light.green {
+            background: #27ae60;
+            box-shadow: 0 0 15px rgba(39, 174, 96, 0.8);
+            animation: pulse-green 0.6s infinite;
+        }
+
+        .traffic-light.yellow {
+            background: #f39c12;
+            box-shadow: 0 0 15px rgba(243, 156, 18, 0.6);
+        }
+
+        @keyframes pulse-green {
+            0%, 100% { box-shadow: 0 0 15px rgba(39, 174, 96, 0.8); }
+            50% { box-shadow: 0 0 25px rgba(39, 174, 96, 1); }
+        }
+
+        .road-visual {
+            flex: 1;
+            height: 60px;
+            background: linear-gradient(90deg, #333 2px, transparent 2px, transparent 48%, #333 48%, #333 50%, transparent 50%, transparent 98%, #333 98%);
+            position: relative;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .ambulance-indicator {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 2em;
+            animation: move-ambulance 2s infinite ease-in-out;
+            z-index: 10;
+        }
+
+        @keyframes move-ambulance {
+            0%, 100% { left: 5%; }
+            50% { left: 85%; }
+        }
+
+        .ambulance-indicator.active {
+            animation: pulse-ambulance 0.5s infinite;
+        }
+
+        @keyframes pulse-ambulance {
+            0%, 100% { transform: translateY(-50%) scale(1); }
+            50% { transform: translateY(-50%) scale(1.2); }
+        }
+
+        .control-button {
+            padding: 8px 16px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .control-button:hover {
+            background: #229954;
+        }
+
+        .control-button.red {
+            background: #e74c3c;
+        }
+
+        .control-button.red:hover {
+            background: #c0392b;
+        }
+
+        .simulation-controls {
+            background: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .simulation-controls h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .stats-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 4px solid #667eea;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            color: #2c3e50;
+            font-size: 1.8em;
+            font-weight: 600;
+        }
+
+        .algorithm-info {
+            background: #d4edda;
+            border: 2px solid #27ae60;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            color: #155724;
+        }
+
+        .algorithm-info h4 {
+            margin-bottom: 10px;
+        }
+
+        .algorithm-info ul {
+            margin-left: 20px;
+            line-height: 1.8;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            border: 2px solid #f5c6cb;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .success-message {
+            background: #d4edda;
+            border: 2px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .message {
+            display: none;
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .panel {
+                padding: 15px;
+            }
+
+            .road-visual {
+                height: 50px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Traffic Control System</h1>
+            <p class="subtitle">Smart Traffic Light Management for Emergency Vehicles</p>
+        </header>
+
+        <div class="main-grid">
+            <!-- Left Panel: Controls -->
+            <div class="panel">
+                <h2>Setup</h2>
+
+                <div class="input-group">
+                    <label for="numRoads">Number of Roads/Intersections:</label>
+                    <input type="number" id="numRoads" min="1" max="10" value="5" placeholder="Enter number of roads">
+                </div>
+
+                <button class="btn-primary" onclick="createRoads()">Initialize Roads</button>
+
+                <div id="ambulanceInputs" style="display: none; margin-top: 20px;">
+                    <div class="input-group">
+                        <label for="ambulanceRoad">Ambulance Position (Road Number):</label>
+                        <select id="ambulanceRoad">
+                            <option value="">Select a road...</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="ambulanceCount">Number of Ambulances:</label>
+                        <input type="number" id="ambulanceCount" min="1" max="5" value="1">
+                    </div>
+
+                    <div class="button-group">
+                        <button class="btn-primary" onclick="addAmbulance()">Add Ambulance</button>
+                        <button class="btn-danger" onclick="clearAmbulances()">Clear All</button>
+                    </div>
+                </div>
+
+                <div id="ambulancesList" class="ambulance-list"></div>
+
+                <div class="button-group" style="margin-top: 20px;">
+                    <button class="btn-primary" onclick="startSimulation()" id="startBtn" disabled>Start Simulation</button>
+                    <button class="btn-danger" onclick="stopSimulation()" id="stopBtn" disabled>Stop Simulation</button>
+                </div>
+
+                <div id="message" class="message"></div>
+
+                <div class="simulation-controls">
+                    <h3>Algorithm Controls</h3>
+                    <div class="control-buttons">
+                        <button class="control-button" onclick="showAlgorithmInfo()">View Algorithm</button>
+                        <button class="control-button" onclick="resetSystem()">Reset System</button>
+                    </div>
+                </div>
+
+                <div class="stats-panel">
+                    <div class="stat-card">
+                        <div class="stat-label">Total Roads</div>
+                        <div class="stat-value" id="totalRoads">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Ambulances</div>
+                        <div class="stat-value" id="ambulanceCount2">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Green Lights</div>
+                        <div class="stat-value" id="greenCount">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Visualization -->
+            <div class="panel">
+                <h2>Real-Time Traffic Visualization</h2>
+                <div id="visualization" class="visualization"></div>
+
+                <div class="algorithm-info" id="algorithmInfo" style="display: none;">
+                    <h4>Smart Traffic Control Algorithm</h4>
+                    <ul>
+                        <li><strong>Detection:</strong> AI identifies ambulance using computer vision</li>
+                        <li><strong>Route Planning:</strong> System calculates optimal path through intersections</li>
+                        <li><strong>Green Wave:</strong> Traffic lights turn green sequentially along ambulance route</li>
+                        <li><strong>Priority Queuing:</strong> Conflicting traffic is queued and held at red lights</li>
+                        <li><strong>Dynamic Adjustment:</strong> Route adapts based on traffic conditions</li>
+                        <li><strong>Auto-Reset:</strong> Returns to normal traffic after ambulance passes</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let roadsData = [];
+        let ambulancesData = [];
+        let simulationRunning = false;
+        let simulationInterval = null;
+
+        function createRoads() {
+            const numRoads = parseInt(document.getElementById('numRoads').value);
+
+            if (numRoads < 1 || numRoads > 10) {
+                showMessage('Please enter a number between 1 and 10', 'error');
+                return;
+            }
+
+            roadsData = [];
+            ambulancesData = [];
+
+            // Create road objects
+            for (let i = 1; i <= numRoads; i++) {
+                roadsData.push({
+                    id: i,
+                    name: `Road ${i}`,
+                    trafficLight: 'red',
+                    hasAmbulance: false,
+                    isActive: false
+                });
+            }
+
+            // Update select dropdown
+            const select = document.getElementById('ambulanceRoad');
+            select.innerHTML = '<option value="">Select a road...</option>';
+            roadsData.forEach(road => {
+                const option = document.createElement('option');
+                option.value = road.id;
+                option.textContent = road.name;
+                select.appendChild(option);
+            });
+
+            document.getElementById('ambulanceInputs').style.display = 'block';
+            document.getElementById('totalRoads').textContent = numRoads;
+            renderVisualization();
+            showMessage(`${numRoads} roads initialized successfully!`, 'success');
+        }
+
+        function addAmbulance() {
+            const roadId = parseInt(document.getElementById('ambulanceRoad').value);
+            const count = parseInt(document.getElementById('ambulanceCount').value);
+
+            if (!roadId) {
+                showMessage('Please select a road', 'error');
+                return;
+            }
+
+            for (let i = 0; i < count; i++) {
+                const ambulanceId = `AMB-${ambulancesData.length + 1}`;
+                ambulancesData.push({
+                    id: ambulanceId,
+                    roadId: roadId,
+                    priority: 'high',
+                    status: 'waiting'
+                });
+            }
+
+            // Update road data
+            roadsData.forEach(road => {
+                if (ambulancesData.some(amb => amb.roadId === road.id)) {
+                    road.hasAmbulance = true;
+                }
+            });
+
+            document.getElementById('ambulanceCount2').textContent = ambulancesData.length;
+            renderAmbulancesList();
+            renderVisualization();
+            document.getElementById('startBtn').disabled = ambulancesData.length === 0;
+        }
+
+        function clearAmbulances() {
+            ambulancesData = [];
+            roadsData.forEach(road => road.hasAmbulance = false);
+            document.getElementById('ambulanceCount2').textContent = 0;
+            renderAmbulancesList();
+            renderVisualization();
+            document.getElementById('startBtn').disabled = true;
+        }
+
+        function renderAmbulancesList() {
+            const container = document.getElementById('ambulancesList');
+            container.innerHTML = '';
+
+            if (ambulancesData.length === 0) {
+                container.innerHTML = '<p style="color: #999; text-align: center;">No ambulances added yet</p>';
+                return;
+            }
+
+            ambulancesData.forEach(amb => {
+                const div = document.createElement('div');
+                div.className = 'ambulance-item';
+                div.innerHTML = `
+                    <strong>${amb.id}</strong>
+                    <span class="road-num">Road ${amb.roadId}</span>
+                    <button onclick="removeAmbulance('${amb.id}')" style="background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">✕</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function removeAmbulance(ambulanceId) {
+            ambulancesData = ambulancesData.filter(amb => amb.id !== ambulanceId);
+            
+            // Update road data
+            roadsData.forEach(road => {
+                road.hasAmbulance = ambulancesData.some(amb => amb.roadId === road.id);
+            });
+
+            document.getElementById('ambulanceCount2').textContent = ambulancesData.length;
+            renderAmbulancesList();
+            renderVisualization();
+            document.getElementById('startBtn').disabled = ambulancesData.length === 0;
+        }
+
+        function renderVisualization() {
+            const container = document.getElementById('visualization');
+            container.innerHTML = '';
+
+            roadsData.forEach(road => {
+                const div = document.createElement('div');
+                div.className = `road-row ${road.isActive ? 'active' : ''}`;
+
+                const hasAmbulance = ambulancesData.some(amb => amb.roadId === road.id);
+                const ambulanceIndicator = hasAmbulance ? '<div class="ambulance-indicator" id="amb-road-' + road.id + '">🚑</div>' : '';
+
+                div.innerHTML = `
+                    <div class="road-label">${road.name}</div>
+                    <div class="traffic-light-container">
+                        <div class="traffic-light ${road.trafficLight}" id="light-${road.id}"></div>
+                        <span id="status-${road.id}" style="font-weight: 600; color: #2c3e50;">RED</span>
+                    </div>
+                    <div class="road-visual">
+                        ${ambulanceIndicator}
+                    </div>
+                `;
+
+                container.appendChild(div);
+            });
+        }
+
+        function startSimulation() {
+            if (ambulancesData.length === 0) {
+                showMessage('Please add at least one ambulance', 'error');
+                return;
+            }
+
+            simulationRunning = true;
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+            showMessage('Simulation started! Clearing path for ambulance...', 'success');
+
+            simulateGreenWave();
+        }
+
+        function simulateGreenWave() {
+            // Get unique roads with ambulances
+            const ambulanceRoads = [...new Set(ambulancesData.map(amb => amb.roadId))];
+
+            // Simulate green wave - turn lights green for ambulance roads first
+            let greenIndex = 0;
+            simulationInterval = setInterval(() => {
+                if (!simulationRunning) {
+                    clearInterval(simulationInterval);
+                    return;
+                }
+
+                // Reset all lights
+                roadsData.forEach(road => {
+                    road.trafficLight = 'red';
+                    road.isActive = false;
+                });
+
+                // Turn green for ambulance roads
+                ambulanceRoads.forEach(roadId => {
+                    roadsData[roadId - 1].trafficLight = 'green';
+                    roadsData[roadId - 1].isActive = true;
+                });
+
+                // Turn yellow for next road
+                if (greenIndex < roadsData.length - 1) {
+                    if (greenIndex > 0 && !ambulanceRoads.includes(greenIndex)) {
+                        roadsData[greenIndex - 1].trafficLight = 'yellow';
+                    }
+                }
+
+                greenIndex++;
+
+                // Reset after all roads cycle
+                if (greenIndex > roadsData.length) {
+                    greenIndex = 0;
+                }
+
+                updateTrafficLights();
+                updateStats();
+            }, 1500);
+        }
+
+        function updateTrafficLights() {
+            roadsData.forEach(road => {
+                const light = document.getElementById(`light-${road.id}`);
+                const status = document.getElementById(`status-${road.id}`);
+
+                if (light) {
+                    light.className = `traffic-light ${road.trafficLight}`;
+                    status.textContent = road.trafficLight.toUpperCase();
+                    status.style.color = road.trafficLight === 'green' ? '#27ae60' : 
+                                        road.trafficLight === 'yellow' ? '#f39c12' : '#e74c3c';
+                }
+
+                const row = light?.closest('.road-row');
+                if (row) {
+                    row.classList.toggle('active', road.isActive);
+                }
+            });
+        }
+
+        function updateStats() {
+            const greenCount = roadsData.filter(r => r.trafficLight === 'green').length;
+            document.getElementById('greenCount').textContent = greenCount;
+        }
+
+        function stopSimulation() {
+            simulationRunning = false;
+            clearInterval(simulationInterval);
+            document.getElementById('startBtn').disabled = ambulancesData.length === 0;
+            document.getElementById('stopBtn').disabled = true;
+
+            // Reset all lights to red
+            roadsData.forEach(road => {
+                road.trafficLight = 'red';
+                road.isActive = false;
+            });
+
+            updateTrafficLights();
+            updateStats();
+            showMessage('Simulation stopped. All lights reset to red.', 'success');
+        }
+
+        function resetSystem() {
+            stopSimulation();
+            roadsData = [];
+            ambulancesData = [];
+            document.getElementById('visualization').innerHTML = '';
+            document.getElementById('ambulancesList').innerHTML = '';
+            document.getElementById('ambulanceInputs').style.display = 'none';
+            document.getElementById('totalRoads').textContent = 0;
+            document.getElementById('ambulanceCount2').textContent = 0;
+            document.getElementById('greenCount').textContent = 0;
+            showMessage('System reset successfully!', 'success');
+        }
+
+        function showAlgorithmInfo() {
+            const info = document.getElementById('algorithmInfo');
+            info.style.display = info.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = text;
+            messageDiv.className = `message show ${type === 'error' ? 'error-message' : 'success-message'}`;
+            messageDiv.style.background = type === 'error' ? '#f8d7da' : '#d4edda';
+            messageDiv.style.borderColor = type === 'error' ? '#f5c6cb' : '#c3e6cb';
+            messageDiv.style.color = type === 'error' ? '#721c24' : '#155724';
+
+            setTimeout(() => {
+                messageDiv.classList.remove('show');
+            }, 4000);
+        }
+    </script>
+</body>
+</html>

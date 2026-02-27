@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚑 Ambulance Detection - Real-time AI Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .emoji {
+            font-size: 1.2em;
+        }
+        
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 1.1em;
+        }
+        
+        .content {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+        }
+        
+        .section {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        /* Upload Section */
+        .upload-box {
+            border: 3px dashed #667eea;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+        
+        .upload-box:hover {
+            border-color: #764ba2;
+            background: #f0e8f8;
+            transform: scale(1.02);
+        }
+        
+        .upload-box.dragover {
+            border-color: #27ae60;
+            background: #d4edda;
+            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+        }
+        
+        .upload-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+        
+        .upload-box h3 {
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .upload-box p {
+            color: #7f8c8d;
+        }
+        
+        .progress-container {
+            margin: 20px 0;
+            display: none;
+        }
+        
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #ecf0f1;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .detection-stats {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+        
+        .detection-stats p {
+            margin: 8px 0;
+            color: #555;
+        }
+        
+        .success-message {
+            background: #d4edda;
+            border: 2px solid #27ae60;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            font-weight: 600;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        /* Video Player */
+        .video-player-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .video-player {
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        video {
+            width: 100%;
+            height: auto;
+            display: block;
+            max-height: 600px;
+        }
+        
+        .detection-overlay {
+            position: relative;
+            margin-top: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            padding: 15px;
+            color: white;
+        }
+        
+        .detection-live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 1.1em;
+            margin-bottom: 15px;
+        }
+        
+        .pulse-dot {
+            width: 12px;
+            height: 12px;
+            background: #00ff00;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+            box-shadow: 0 0 10px #00ff00;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.5;
+                transform: scale(1.2);
+            }
+        }
+        
+        .detection-realtime-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        
+        .stat-item {
+            background: rgba(255,255,255,0.1);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            text-align: center;
+        }
+        
+        .stat-icon {
+            font-size: 1.5em;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .stat-name {
+            font-size: 0.85em;
+            opacity: 0.9;
+            display: block;
+        }
+        
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            display: block;
+            margin-top: 5px;
+            color: #00ff00;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 12px 24px;
+            font-size: 1em;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #ecf0f1;
+            color: #2c3e50;
+        }
+        
+        .btn-secondary:hover {
+            background: #bdc3c7;
+        }
+        
+        .detection-info {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        
+        .detection-info h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .feature {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        
+        .feature-icon {
+            font-size: 1.5em;
+            min-width: 30px;
+        }
+        
+        .feature-text {
+            color: #555;
+            font-size: 0.95em;
+        }
+        
+        .info-box {
+            background: linear-gradient(135deg, #e8f4f8 0%, #f0e8f8 100%);
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .info-box strong {
+            color: #2c3e50;
+        }
+        
+        .info-box ol {
+            margin-left: 20px;
+            margin-top: 10px;
+            color: #555;
+            line-height: 1.8;
+        }
+        
+        footer {
+            text-align: center;
+            color: white;
+            margin-top: 40px;
+            padding: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            .detection-realtime-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            video {
+                max-height: 400px;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>
+                <span class="emoji">🚑</span>
+                Ambulance Detection AI System
+                <span class="emoji">🎥</span>
+            </h1>
+            <p class="subtitle">Real-time YOLOv8 Deep Learning Detection with Live Analytics</p>
+        </header>
+        
+        <div class="content">
+            <!-- Upload Section -->
+            <div class="section">
+                <h2>
+                    <span class="emoji">📤</span>
+                    Upload & Process Your Video
+                </h2>
+                
+                <div class="upload-box" id="uploadBox">
+                    <div class="upload-icon">🎬</div>
+                    <h3>Drag & Drop Your Video Here</h3>
+                    <p>or click to select from your computer</p>
+                    <p style="font-size: 0.85em; margin-top: 10px; color: #999;">Supported: MP4, AVI, MOV, MKV, WEBM, FLV</p>
+                    <input type="file" id="videoInput" accept=".mp4,.avi,.mov,.mkv,.webm,.flv" style="display: none;">
+                </div>
+                
+                <div class="progress-container" id="processingStatus">
+                    <div class="progress-label">
+                        <span id="progressText">Initializing...</span>
+                        <span id="progressPercent">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div id="progressFill" class="progress-fill"></div>
+                    </div>
+                    <div class="detection-stats">
+                        <p><strong>📹 File:</strong> <span id="currentFile">-</span></p>
+                        <p><strong>🚑 Ambulances Found:</strong> <span id="detectionCount">0</span></p>
+                        <p><strong>🎬 Frames Processed:</strong> <span id="frameCount">0</span></p>
+                    </div>
+                </div>
+                
+                <div class="success-message" id="uploadResult">
+                    ✅ <strong>Video Processed Successfully!</strong>
+                    <div class="detection-stats" style="margin-top: 15px; border-color: #27ae60;">
+                        <p><strong>🚑 Total Ambulances Detected:</strong> <span id="resultDetections">-</span></p>
+                        <p><strong>📊 Detection Rate:</strong> <span id="resultRate">-</span></p>
+                        <p><strong>⭐ Max Confidence:</strong> <span id="resultConfidence">-</span></p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Video Viewer Section -->
+            <div class="section">
+                <h2>
+                    <span class="emoji">▶️</span>
+                    Real-time Detection Viewer
+                </h2>
+                
+                <div id="videoContainer" style="display: none;">
+                    <div class="video-player-container">
+                        <div class="video-player">
+                            <video id="detectionVideo" controls>
+                                <source id="videoSource" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                        
+                        <div class="detection-overlay">
+                            <div class="detection-live-indicator">
+                                <span class="pulse-dot"></span>
+                                <span>🎯 AI Detection Active</span>
+                            </div>
+                            <div class="detection-realtime-stats">
+                                <div class="stat-item">
+                                    <span class="stat-icon">🎬</span>
+                                    <span class="stat-name">Frame</span>
+                                    <span class="stat-value" id="currentFrame">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-icon">🚑</span>
+                                    <span class="stat-name">In Frame</span>
+                                    <span class="stat-value" id="frameDetections">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-icon">📊</span>
+                                    <span class="stat-name">Total</span>
+                                    <span class="stat-value" id="totalDetections">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-icon">⏱️</span>
+                                    <span class="stat-name">Time</span>
+                                    <span class="stat-value" id="videoTime">0:00</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="controls">
+                        <button class="btn-primary" onclick="playVideo()">▶️ Play</button>
+                        <button class="btn-primary" onclick="pauseVideo()">⏸️ Pause</button>
+                        <button class="btn-primary" onclick="restartVideo()">⏮️ Restart</button>
+                        <button class="btn-secondary" onclick="downloadVideo()">📥 Download</button>
+                    </div>
+                    
+                    <div class="detection-info">
+                        <h3>✨ What You'll See in This Video:</h3>
+                        <div class="features">
+                            <div class="feature">
+                                <span class="feature-icon">📦</span>
+                                <span class="feature-text"><strong>Bounding Boxes</strong> - Green boxes highlight each ambulance</span>
+                            </div>
+                            <div class="feature">
+                                <span class="feature-icon">🎯</span>
+                                <span class="feature-text"><strong>Numbered Labels</strong> - Ambulance 1, 2, 3... for easy tracking</span>
+                            </div>
+                            <div class="feature">
+                                <span class="feature-icon">📊</span>
+                                <span class="feature-text"><strong>Confidence Scores</strong> - Detection accuracy shown as percentage</span>
+                            </div>
+                            <div class="feature">
+                                <span class="feature-icon">📐</span>
+                                <span class="feature-text"><strong>Size Information</strong> - Width x Height in pixels</span>
+                            </div>
+                            <div class="feature">
+                                <span class="feature-icon">🔢</span>
+                                <span class="feature-text"><strong>Frame Counter</strong> - Real-time frame tracking</span>
+                            </div>
+                            <div class="feature">
+                                <span class="feature-icon">⚡</span>
+                                <span class="feature-text"><strong>AI Processing</strong> - YOLOv8 model analyzes each frame</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="noVideoMessage" class="info-box">
+                    <strong>⏳ Ready to detect ambulances!</strong><br>
+                    <br>
+                    How it works:
+                    <ol>
+                        <li>✅ Upload a video (MP4, AVI, MOV, etc.)</li>
+                        <li>🤖 AI model processes every single frame</li>
+                        <li>📦 Draws bounding boxes around ambulances</li>
+                        <li>🏷️ Adds labels and confidence scores</li>
+                        <li>▶️ Play video with detections visible</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <!-- Stats Section -->
+            <div class="section">
+                <h2>
+                    <span class="emoji">📊</span>
+                    Detection Statistics
+                </h2>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 2.5em; font-weight: bold;">405</div>
+                        <div style="opacity: 0.9;">Ambulances Detected</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 20px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 2.5em; font-weight: bold;">349</div>
+                        <div style="opacity: 0.9;">Frames with Detections</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 20px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 2.5em; font-weight: bold;">60.8%</div>
+                        <div style="opacity: 0.9;">Detection Rate</div>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; padding: 20px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 2.5em; font-weight: bold;">91.07%</div>
+                        <div style="opacity: 0.9;">Max Confidence</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>🚑 Ambulance Detection AI System | Powered by YOLOv8 Deep Learning Model</p>
+            <p style="font-size: 0.9em; margin-top: 10px; opacity: 0.8;">Real-time object detection for intelligent traffic management</p>
+        </footer>
+    </div>
+    
+    <script>
+        // Upload handling
+        const uploadBox = document.getElementById('uploadBox');
+        const videoInput = document.getElementById('videoInput');
+        const processingStatus = document.getElementById('processingStatus');
+        const uploadResult = document.getElementById('uploadResult');
+        const detectionVideo = document.getElementById('detectionVideo');
+        
+        uploadBox.addEventListener('click', () => videoInput.click());
+        
+        uploadBox.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadBox.classList.add('dragover');
+        });
+        
+        uploadBox.addEventListener('dragleave', () => {
+            uploadBox.classList.remove('dragover');
+        });
+        
+        uploadBox.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadBox.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                videoInput.files = files;
+                handleFileUpload();
+            }
+        });
+        
+        videoInput.addEventListener('change', handleFileUpload);
+        
+        function handleFileUpload() {
+            const file = videoInput.files[0];
+            if (!file) return;
+            
+            const allowedTypes = ['video/mp4', 'video/x-msvideo', 'video/quicktime', 'video/x-matroska', 'video/webm'];
+            if (!allowedTypes.includes(file.type) && !file.name.match(/\.(mp4|avi|mov|mkv|webm|flv)$/i)) {
+                alert('Invalid file type. Please upload: MP4, AVI, MOV, MKV, WEBM, or FLV');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            processingStatus.style.display = 'block';
+            uploadResult.style.display = 'none';
+            document.getElementById('videoContainer').style.display = 'none';
+            document.getElementById('noVideoMessage').style.display = 'block';
+            
+            document.getElementById('progressText').textContent = 'Uploading video...';
+            document.getElementById('currentFile').textContent = file.name;
+            
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                    processingStatus.style.display = 'none';
+                } else {
+                    document.getElementById('progressText').textContent = 'Processing with YOLOv8 AI...';
+                    pollProcessingStatus();
+                }
+            })
+            .catch(error => {
+                alert('Upload failed: ' + error);
+                processingStatus.style.display = 'none';
+            });
+        }
+        
+        function pollProcessingStatus() {
+            const pollInterval = setInterval(() => {
+                fetch('/api/status')
+                    .then(response => response.json())
+                    .then(status => {
+                        document.getElementById('progressPercent').textContent = status.progress + '%';
+                        document.getElementById('progressFill').style.width = status.progress + '%';
+                        document.getElementById('detectionCount').textContent = status.detections;
+                        
+                        if (status.status === 'completed') {
+                            clearInterval(pollInterval);
+                            showCompletionMessage(status.result);
+                            setTimeout(loadVideo, 1000);
+                        } else if (status.status === 'error') {
+                            clearInterval(pollInterval);
+                            alert('Processing error: ' + status.message);
+                            processingStatus.style.display = 'none';
+                        }
+                    });
+            }, 500);
+        }
+        
+        function showCompletionMessage(result) {
+            processingStatus.style.display = 'none';
+            uploadResult.style.display = 'block';
+            document.getElementById('resultDetections').textContent = result.total_detections;
+            document.getElementById('resultRate').textContent = result.detection_rate;
+            document.getElementById('resultConfidence').textContent = result.max_confidence;
+        }
+        
+        function loadVideo() {
+            fetch('/api/refresh')
+                .then(response => response.json())
+                .then(videos => {
+                    if (videos.length > 0) {
+                        const latestVideo = videos[0];
+                        document.getElementById('videoSource').src = latestVideo.file;
+                        detectionVideo.load();
+                        document.getElementById('videoContainer').style.display = 'block';
+                        document.getElementById('noVideoMessage').style.display = 'none';
+                    }
+                });
+        }
+        
+        function playVideo() {
+            detectionVideo.play();
+        }
+        
+        function pauseVideo() {
+            detectionVideo.pause();
+        }
+        
+        function restartVideo() {
+            detectionVideo.currentTime = 0;
+        }
+        
+        function downloadVideo() {
+            const source = document.getElementById('videoSource').src;
+            if (source) {
+                const a = document.createElement('a');
+                a.href = source;
+                a.download = 'ambulance_detection.mp4';
+                a.click();
+            }
+        }
+        
+        // Update video stats while playing
+        detectionVideo.addEventListener('timeupdate', () => {
+            const fps = 50; // Default FPS
+            const currentFrame = Math.floor(detectionVideo.currentTime * fps);
+            document.getElementById('currentFrame').textContent = currentFrame;
+            
+            const minutes = Math.floor(detectionVideo.currentTime / 60);
+            const seconds = Math.floor(detectionVideo.currentTime % 60);
+            document.getElementById('videoTime').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        });
+        
+        // Load existing video on page load
+        window.addEventListener('load', () => {
+            fetch('/api/refresh')
+                .then(response => response.json())
+                .then(videos => {
+                    if (videos.length > 0) {
+                        const latestVideo = videos[0];
+                        document.getElementById('videoSource').src = latestVideo.file;
+                        detectionVideo.load();
+                        document.getElementById('videoContainer').style.display = 'block';
+                        document.getElementById('noVideoMessage').style.display = 'none';
+                    }
+                });
+        });
+    </script>
+</body>
+</html>

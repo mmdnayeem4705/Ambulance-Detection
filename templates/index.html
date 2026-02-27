@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ambulance Detection AI System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+            border-bottom: 3px solid #a93226;
+        }
+        
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 5px;
+        }
+        
+        .header p {
+            font-size: 1em;
+            opacity: 0.95;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        /* Type Selection */
+        .type-selector {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            justify-content: center;
+        }
+        
+        .type-option {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        
+        .type-option input[type="radio"] {
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+        }
+        
+        .type-option label {
+            cursor: pointer;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 1em;
+        }
+        
+        .type-option input[type="radio"]:checked + label {
+            color: #e74c3c;
+        }
+        
+        /* Upload Section */
+        .upload-section {
+            border: 2px dashed #e74c3c;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            background: #fef5f5;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-section:hover {
+            border-color: #c0392b;
+            background: #fee;
+        }
+        
+        .upload-section.dragover {
+            border-color: #c0392b;
+            background: #ffe;
+            transform: scale(1.01);
+        }
+        
+        .upload-section h2 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .file-input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        
+        .file-label {
+            display: inline-block;
+            padding: 12px 25px;
+            background: #e74c3c;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        
+        .file-label:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+        }
+        
+        .file-name {
+            margin-top: 15px;
+            color: #27ae60;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+        
+        .file-size {
+            margin-top: 5px;
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+        
+        .detect-btn {
+            padding: 12px 35px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            margin-top: 20px;
+            width: 100%;
+        }
+        
+        .detect-btn:hover:not(:disabled) {
+            background: #c0392b;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .detect-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        /* Loading */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 30px;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .spinner {
+            border: 4px solid #ecf0f1;
+            border-top: 4px solid #e74c3c;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+        
+        .loading p {
+            margin-top: 15px;
+            color: #7f8c8d;
+            font-size: 1em;
+        }
+        
+        /* Error Message */
+        .error {
+            background: #fadbd8;
+            color: #922b21;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: none;
+            border-left: 4px solid #e74c3c;
+        }
+        
+        .error.show {
+            display: block;
+        }
+        
+        /* Results Section */
+        .results-section {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #ecf0f1;
+            display: none;
+        }
+        
+        .results-section.show {
+            display: block;
+        }
+        
+        .results-section h2 {
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+        
+        .result-video {
+            width: 100%;
+            max-width: 100%;
+            min-height: 400px;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            background: #000;
+            margin: 20px 0;
+            border: 2px solid #e74c3c;
+            display: block;
+        }
+        
+        .result-video::-webkit-media-controls-panel {
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+        
+        .result-image {
+            width: 100%;
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            margin-bottom: 20px;
+        }
+        
+        /* Detection Stats */
+        .detection-stats {
+            background: #ecf0f1;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        
+        .stats-header {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #e74c3c;
+            margin-bottom: 10px;
+        }
+        
+        .stats-content {
+            color: #2c3e50;
+            line-height: 1.6;
+        }
+        
+        .no-detections {
+            color: #7f8c8d;
+            font-style: italic;
+            padding: 10px 0;
+        }
+        
+        /* Video Detection Info Section */
+        .detection-info-panel {
+            background: linear-gradient(135deg, #e8f4f8 0%, #d4e9f0 100%);
+            border-left: 4px solid #3498db;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .detection-info-title {
+            font-size: 1.1em;
+            font-weight: 700;
+            color: #1a5276;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .detection-info-desc {
+            color: #2c3e50;
+            line-height: 1.6;
+            font-size: 0.95em;
+            margin-bottom: 15px;
+        }
+        
+        .detection-tech-stack {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 12px;
+        }
+        
+        .tech-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 8px 0;
+            color: #2c3e50;
+            font-size: 0.9em;
+        }
+        
+        .tech-icon {
+            color: #e74c3c;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        
+        .detection-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
+        }
+        
+        .stat-box {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            border: 2px solid #ecf0f1;
+            transition: all 0.3s;
+        }
+        
+        .stat-box:hover {
+            border-color: #e74c3c;
+            box-shadow: 0 2px 8px rgba(231, 76, 60, 0.2);
+        }
+        
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: #e74c3c;
+        }
+        
+        .stat-label {
+            font-size: 0.8em;
+            color: #7f8c8d;
+            margin-top: 5px;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚑 Ambulance Detection AI System</h1>
+            <p>Real-time YOLOv8 Deep Learning Detection with Live Analytics</p>
+        </div>
+        
+        <div class="content">
+            <!-- Type Selection -->
+            <div class="type-selector">
+                <div class="type-option">
+                    <input type="radio" id="imageOption" name="detectionType" value="image" checked>
+                    <label for="imageOption">🖼️ Single Image</label>
+                </div>
+                <div class="type-option">
+                    <input type="radio" id="videoOption" name="detectionType" value="video">
+                    <label for="videoOption">🎬 Video</label>
+                </div>
+                <div class="type-option">
+                    <input type="radio" id="multiDirOption" name="detectionType" value="multi-direction">
+                    <label for="multiDirOption">🧭 Multi-Direction (4 Images)</label>
+                </div>
+            </div>
+            
+            <!-- Single Image/Video Upload Section (Original) -->
+            <div id="singleUploadSection">
+            <div class="upload-section" id="uploadSection">
+                <h2 id="uploadTitle">📤 Upload New Video</h2>
+                <p style="margin: 15px 0; color: #555;">Drag & Drop your file here<br>or</p>
+                
+                <div class="file-input-wrapper">
+                    <input type="file" id="fileInput" class="file-input" accept="video/*,.mp4,.avi,.mov,.mkv,.webm,.flv">
+                    <label for="fileInput" class="file-label">Choose File</label>
+                </div>
+                
+                <p id="supportedFormats" style="margin: 15px 0; color: #7f8c8d; font-size: 0.9em;">Supported formats: MP4, AVI, MOV, MKV, WebM, FLV (5 seconds to 4GB)</p>
+                <p style="color: #27ae60; font-size: 0.9em;">⚡ Works with short videos (5-10 seconds) and long videos</p>
+                
+                <div class="file-name" id="fileName"></div>
+                <div class="file-size" id="fileSize"></div>
+                
+                <!-- Preview Section for Selected File -->
+                <div id="previewContainer" style="margin-top: 20px; padding: 15px; background: white; border-radius: 8px; border: 1px solid #ecf0f1; display: none;">
+                    <p style="margin-bottom: 10px; font-weight: 600; color: #2c3e50;">📺 Preview:</p>
+                    <div id="filePreview" style="width: 100%; max-height: 300px; background: #f5f5f5; border-radius: 6px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                        <span style="color: #999;">No preview available</span>
+                    </div>
+                </div>
+                
+                <button class="detect-btn" id="detectBtn" onclick="detectAmbulance()">Detect Ambulances</button>
+            </div>
+            
+            <!-- Loading Indicator -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p id="loadingText">Processing video... This may take a while...</p>
+            </div>
+            
+            <!-- Error Message -->
+            <div class="error" id="error"></div>
+            </div>
+            
+            <!-- Multi-Direction Upload Section -->
+            <div id="multiDirectionUploadSection" style="display: none; margin-bottom: 20px;">
+                <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <h2 style="color: #2c3e50; margin-bottom: 10px;">🧭 Multi-Direction Detection (4 Images)</h2>
+                    <p style="color: #666; margin-bottom: 20px;">Upload one image for each direction (North, South, East, West) to simulate a 4-way intersection intersection monitoring.</p>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                        <!-- North Direction -->
+                        <div style="background: #ecf0f1; padding: 15px; border-radius: 8px; border: 2px dashed #3498db;">
+                            <div style="text-align: center; margin-bottom: 10px;">
+                                <div style="font-size: 1.5em; margin-bottom: 5px;">⬆️</div>
+                                <div style="font-weight: 600; color: #2c3e50;">NORTH</div>
+                            </div>
+                            <div class="file-input-wrapper" style="margin-bottom: 10px;">
+                                <input type="file" id="fileNorth" class="file-input" accept="image/*,video/*,.jpg,.jpeg,.png,.gif,.bmp,.mp4,.mov,.avi,.mkv,.webm">
+                                <label for="fileNorth" class="file-label">Choose Image</label>
+                            </div>
+                            <div id="previewNorth" style="width: 100%; height: 120px; background: white; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #999; font-size: 0.9em;">No image</div>
+                            <div id="statusNorth" style="text-align: center; margin-top: 8px; font-size: 0.85em; color: #666;">Ready</div>
+                        </div>
+                        
+                        <!-- South Direction -->
+                        <div style="background: #ecf0f1; padding: 15px; border-radius: 8px; border: 2px dashed #e74c3c;">
+                            <div style="text-align: center; margin-bottom: 10px;">
+                                <div style="font-size: 1.5em; margin-bottom: 5px;">⬇️</div>
+                                <div style="font-weight: 600; color: #2c3e50;">SOUTH</div>
+                            </div>
+                            <div class="file-input-wrapper" style="margin-bottom: 10px;">
+                                <input type="file" id="fileSouth" class="file-input" accept="image/*,video/*,.jpg,.jpeg,.png,.gif,.bmp,.mp4,.mov,.avi,.mkv,.webm">
+                                <label for="fileSouth" class="file-label">Choose Image</label>
+                            </div>
+                            <div id="previewSouth" style="width: 100%; height: 120px; background: white; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #999; font-size: 0.9em;">No image</div>
+                            <div id="statusSouth" style="text-align: center; margin-top: 8px; font-size: 0.85em; color: #666;">Ready</div>
+                        </div>
+                        
+                        <!-- East Direction -->
+                        <div style="background: #ecf0f1; padding: 15px; border-radius: 8px; border: 2px dashed #27ae60;">
+                            <div style="text-align: center; margin-bottom: 10px;">
+                                <div style="font-size: 1.5em; margin-bottom: 5px;">➡️</div>
+                                <div style="font-weight: 600; color: #2c3e50;">EAST</div>
+                            </div>
+                            <div class="file-input-wrapper" style="margin-bottom: 10px;">
+                                <input type="file" id="fileEast" class="file-input" accept="image/*,video/*,.jpg,.jpeg,.png,.gif,.bmp,.mp4,.mov,.avi,.mkv,.webm">
+                                <label for="fileEast" class="file-label">Choose Image</label>
+                            </div>
+                            <div id="previewEast" style="width: 100%; height: 120px; background: white; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #999; font-size: 0.9em;">No image</div>
+                            <div id="statusEast" style="text-align: center; margin-top: 8px; font-size: 0.85em; color: #666;">Ready</div>
+                        </div>
+                        
+                        <!-- West Direction -->
+                        <div style="background: #ecf0f1; padding: 15px; border-radius: 8px; border: 2px dashed #f39c12;">
+                            <div style="text-align: center; margin-bottom: 10px;">
+                                <div style="font-size: 1.5em; margin-bottom: 5px;">⬅️</div>
+                                <div style="font-weight: 600; color: #2c3e50;">WEST</div>
+                            </div>
+                            <div class="file-input-wrapper" style="margin-bottom: 10px;">
+                                <input type="file" id="fileWest" class="file-input" accept="image/*,video/*,.jpg,.jpeg,.png,.gif,.bmp,.mp4,.mov,.avi,.mkv,.webm">
+                                <label for="fileWest" class="file-label">Choose Image</label>
+                            </div>
+                            <div id="previewWest" style="width: 100%; height: 120px; background: white; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #999; font-size: 0.9em;">No image</div>
+                            <div id="statusWest" style="text-align: center; margin-top: 8px; font-size: 0.85em; color: #666;">Ready</div>
+                        </div>
+                    </div>
+                    
+                    <button class="detect-btn" onclick="detectMultiDirection()" style="width: 100%;">🚦 Analyze All Directions</button>
+                </div>
+            </div>
+            
+            <!-- Results Section -->
+            <div class="results-section" id="resultsSection">
+                <!-- Video Container with Labels -->
+                <div style="position: relative; display: inline-block; width: 100%; margin: 20px 0;">
+                    
+                    <!-- Video Overlay Labels -->
+                    <!-- Bottom Right Status -->
+                </div>
+
+                
+                <h3 style="margin: 25px 0 15px 0; color: #2c3e50;">🚦 Traffic Control System</h3>
+                <p style="color: #555; margin-bottom: 15px;">After detecting ambulances, visualize how the smart traffic control system creates a green wave to clear the path for emergency vehicles.</p>
+                
+                <!-- Traffic Control Panel -->
+                <div style="margin-top: 20px; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #9b59b6;">
+                    <h4 style="color: #2c3e50; margin-bottom: 15px;">🚑 Traffic Control Interface</h4>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                        <!-- Route Planner -->
+                        <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #2c3e50;">🚑 Route Planner (Optional)</label>
+                            <p style="font-size: 0.8em; color: #999; margin-bottom: 10px;">⚙️ Automatic when ambulance detected</p>
+                            <div style="display: flex; gap: 10px; margin-bottom: 10px; flex-direction: column;">
+                                <select id="tcFromRoad" style="padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em;">
+                                    <option value="">Select From (Current Location)</option>
+                                    <option value="NORTH">🔵 NORTH</option>
+                                    <option value="EAST">🔵 EAST</option>
+                                    <option value="SOUTH">🔵 SOUTH</option>
+                                    <option value="WEST">🔵 WEST</option>
+                                </select>
+                                <select id="tcToRoad" style="padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em;">
+                                    <option value="">Select To (Destination)</option>
+                                    <option value="NORTH">🏥 NORTH</option>
+                                    <option value="EAST">🏥 EAST</option>
+                                    <option value="SOUTH">🏥 SOUTH</option>
+                                    <option value="WEST">🏥 WEST</option>
+                                </select>
+                            </div>
+                            <button onclick="tcPlanRoute()" style="width: 100%; padding: 10px; background: #3498db; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                                🗺️ Plan Route (Manual)
+                            </button>
+                            <p id="tcRouteInfo" style="color: #666; font-size: 0.9em; margin-top: 10px; display: none;"></p>
+                        </div>
+                        
+                        <!-- Quick Actions -->
+                        <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <label style="display: block; margin-bottom: 10px; font-weight: 600; color: #2c3e50;">⚡ Quick Actions</label>
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                <button onclick="tcStartTracking()" style="padding: 10px; background: #27ae60; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                                    ▶️ Start Tracking
+                                </button>
+                                <button onclick="tcStopTracking()" style="padding: 10px; background: #e74c3c; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
+                                    ⏹️ Stop Tracking
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Status Display -->
+                    <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 15px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h4 style="color: #2c3e50; margin: 0;">📊 System Status</h4>
+                            <span style="background: #27ae60; color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.8em; font-weight: 600;">⚙️ AUTOMATIC MODE</span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+                            <div style="text-align: center; padding: 10px; background: #ecf0f1; border-radius: 6px;">
+                                <div style="font-size: 1.5em; font-weight: bold; color: #9b59b6;" id="tcActiveRoads">0</div>
+                                <div style="font-size: 0.85em; color: #666;">Active Roads</div>
+                            </div>
+                            <div style="text-align: center; padding: 10px; background: #ecf0f1; border-radius: 6px;">
+                                <div style="font-size: 1.5em; font-weight: bold; color: #27ae60;" id="tcGreenWaves">0</div>
+                                <div style="font-size: 0.85em; color: #666;">Green Waves</div>
+                            </div>
+                            <div style="text-align: center; padding: 10px; background: #ecf0f1; border-radius: 6px;">
+                                <div style="font-size: 1.5em; font-weight: bold; color: #3498db;" id="tcAvgDelay">0s</div>
+                                <div style="font-size: 0.85em; color: #666;">Avg Delay</div>
+                            </div>
+                            <div style="text-align: center; padding: 10px; background: #ecf0f1; border-radius: 6px;">
+                                <div style="font-size: 1.5em; font-weight: bold; color: #e74c3c;" id="tcSystemStatus">Ready</div>
+                                <div style="font-size: 0.85em; color: #666;">System</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Traffic Lights Display -->
+                    <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        <h4 style="color: #2c3e50; margin-bottom: 10px;">🚦 Traffic Light Status</h4>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                            <div style="padding: 10px; background: #ecf0f1; border-radius: 6px;">
+                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                                    <span style="width: 20px; height: 20px; background: #f44336; border-radius: 50%; box-shadow: 0 0 10px #f44336;"></span>
+                                    <span style="font-weight: 600;">NORTH</span>
+                                </div>
+                                <div style="font-size: 0.85em; color: #666;" id="tcLight-NORTH">Red</div>
+                            </div>
+                            <div style="padding: 10px; background: #ecf0f1; border-radius: 6px;">
+                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                                    <span style="width: 20px; height: 20px; background: #f44336; border-radius: 50%; box-shadow: 0 0 10px #f44336;"></span>
+                                    <span style="font-weight: 600;">EAST</span>
+                                </div>
+                                <div style="font-size: 0.85em; color: #666;" id="tcLight-EAST">Red</div>
+                            </div>
+                            <div style="padding: 10px; background: #ecf0f1; border-radius: 6px;">
+                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                                    <span style="width: 20px; height: 20px; background: #f44336; border-radius: 50%; box-shadow: 0 0 10px #f44336;"></span>
+                                    <span style="font-weight: 600;">SOUTH</span>
+                                </div>
+                                <div style="font-size: 0.85em; color: #666;" id="tcLight-SOUTH">Red</div>
+                            </div>
+                            <div style="padding: 10px; background: #ecf0f1; border-radius: 6px;">
+                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                                    <span style="width: 20px; height: 20px; background: #f44336; border-radius: 50%; box-shadow: 0 0 10px #f44336;"></span>
+                                    <span style="font-weight: 600;">WEST</span>
+                                </div>
+                                <div style="font-size: 0.85em; color: #666;" id="tcLight-WEST">Red</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer style="text-align: center; margin-top: 20px; color: #7f8c8d; font-size: 0.9em;">
+        <p>Ambulance Detection AI System | Powered by YOLOv8</p>
+    </footer>
+    
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const detectBtn = document.getElementById('detectBtn');
+        const uploadSection = document.getElementById('uploadSection');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const resultsSection = document.getElementById('resultsSection');
+        const resultVideo = document.getElementById('resultVideo');
+        const detectionsCount = document.getElementById('detectionsCount');
+        const videoFileName = document.getElementById('videoFileName');
+        const videoFileSize = document.getElementById('videoFileSize');
+        const inFrameCount = document.getElementById('inFrameCount');
+        const totalCount = document.getElementById('totalCount');
+        
+        // Type selection elements
+        const imageOption = document.getElementById('imageOption');
+        const videoOption = document.getElementById('videoOption');
+        const uploadTitle = document.getElementById('uploadTitle');
+        const supportedFormats = document.getElementById('supportedFormats');
+        
+        let selectedFile = null;
+        let videoUrl = null;
+        let detectionType = 'video';
+        
+        // Handle type selection change
+        document.querySelectorAll('input[name="detectionType"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                detectionType = e.target.value;
+                
+                // Update UI based on selection
+                if (detectionType === 'image') {
+                    uploadTitle.textContent = '📤 Upload Image';
+                    supportedFormats.textContent = 'Supported formats: PNG, JPG, JPEG, GIF, BMP';
+                    fileInput.accept = 'image/*,.png,.jpg,.jpeg,.gif,.bmp';
+                    document.querySelector('.file-label').textContent = 'Choose Image';
+                } else {
+                    uploadTitle.textContent = '📤 Upload New Video';
+                    supportedFormats.textContent = 'Supported formats: MP4, AVI, MOV, MKV, WebM, FLV (5 seconds to 4GB)';
+                    fileInput.accept = 'video/*,.mp4,.avi,.mov,.mkv,.webm,.flv';
+                    document.querySelector('.file-label').textContent = 'Choose Video';
+                }
+                
+                // Reset file selection
+                fileInput.value = '';
+                fileName.textContent = '';
+                fileSize.textContent = '';
+                resultsSection.classList.remove('show');
+                error.classList.remove('show');
+            });
+        });
+        
+        // Handle file selection
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                selectedFile = e.target.files[0];
+                const sizeMB = (selectedFile.size / (1024 * 1024)).toFixed(2);
+                fileName.textContent = '✓ Selected: ' + selectedFile.name;
+                fileSize.textContent = sizeMB + ' MB';
+                
+                // Show preview
+                displayFilePreview(selectedFile);
+            }
+        });
+        
+        // Function to display file preview
+        function displayFilePreview(file) {
+            const previewContainer = document.getElementById('previewContainer');
+            const filePreview = document.getElementById('filePreview');
+            
+            if (file.type.startsWith('image/')) {
+                // Image preview
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    filePreview.innerHTML = '<img src="' + e.target.result + '" style="width: 100%; height: 100%; object-fit: contain; border-radius: 6px;">';
+                    previewContainer.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else if (file.type.startsWith('video/')) {
+                // Video preview
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    filePreview.innerHTML = '<video style="width: 100%; max-height: 300px; border-radius: 6px;" controls><source src="' + e.target.result + '"></video>';
+                    previewContainer.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        // Drag and drop functionality
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.classList.add('dragover');
+        });
+        
+        uploadSection.addEventListener('dragleave', () => {
+            uploadSection.classList.remove('dragover');
+        });
+        
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.classList.remove('dragover');
+            
+            if (e.dataTransfer.files.length > 0) {
+                selectedFile = e.dataTransfer.files[0];
+                fileInput.files = e.dataTransfer.files;
+                const sizeMB = (selectedFile.size / (1024 * 1024)).toFixed(2);
+                fileName.textContent = '✓ Selected: ' + selectedFile.name;
+                fileSize.textContent = sizeMB + ' MB';
+                
+                // Show preview
+                displayFilePreview(selectedFile);
+            }
+        });
+        
+        // Detection function
+        async function detectAmbulance() {
+            if (!selectedFile) {
+                showError('Please select a file first!');
+                return;
+            }
+            
+            // Hide previous results and errors
+            resultsSection.classList.remove('show');
+            error.classList.remove('show');
+            
+            // Show loading
+            loading.classList.add('show');
+            detectBtn.disabled = true;
+            
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('confidence', 0.6);
+            
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    if (detectionType === 'video') {
+                        // Display video
+                        if (data.video_url) {
+                            videoUrl = data.video_url;
+                            resultVideo.src = videoUrl;
+                            videoFileName.textContent = selectedFile.name;
+                            const sizeMB = (selectedFile.size / (1024 * 1024)).toFixed(2);
+                            videoFileSize.textContent = sizeMB + ' MB';
+                            
+                            // Update stats with detection data
+                            const detectionCount = data.count || 0;
+                            const framesWithDetections = data.frames_with_detections || 0;
+                            const avgConfidence = data.avg_confidence || 0;
+                            const processingTime = data.processing_time || 0;
+                            
+                            // Update video overlay labels with null checks
+                            try {
+                                const videoLabelCount = document.getElementById('videoLabelCount');
+                                const videoLabelConfidence = document.getElementById('videoLabelConfidence');
+                                const videoLabelTime = document.getElementById('videoLabelTime');
+                                const statusLabel = document.getElementById('videoStatusLabel');
+                                
+                                if (videoLabelCount) videoLabelCount.textContent = detectionCount;
+                                if (videoLabelConfidence) videoLabelConfidence.textContent = Math.round(avgConfidence) + '%';
+                                if (videoLabelTime) videoLabelTime.textContent = processingTime.toFixed(2) + 's';
+                                
+                                // Update video status label
+                                if (statusLabel) {
+                                    if (detectionCount > 0) {
+                                        statusLabel.style.background = 'rgba(231, 76, 60, 0.9)';
+                                        statusLabel.innerHTML = '<span style="width: 8px; height: 8px; background: white; border-radius: 50%; animation: blink 1s infinite;"></span><span>🚑 DETECTED</span>';
+                                    } else {
+                                        statusLabel.style.background = 'rgba(52, 152, 219, 0.9)';
+                                        statusLabel.innerHTML = '<span style="width: 8px; height: 8px; background: white; border-radius: 50%; animation: blink 1s infinite;"></span><span>✓ CLEAR</span>';
+                                    }
+                                }
+                            } catch(e) {
+                                // Silent error handling
+                            }
+                            
+                            // Update detection details (if stats elements exist)
+                            if (detectionsCount) {
+                                detectionsCount.textContent = '🎬 Frame Analysis Results';
+                            }
+                            if (inFrameCount) {
+                                inFrameCount.textContent = '0';
+                            }
+                            if (totalCount) {
+                                totalCount.textContent = detectionCount;
+                            }
+                            
+                            resultsSection.classList.add('show');
+                            
+                            // AUTOMATIC: Trigger traffic control when ambulances detected
+                            if (detectionCount > 0) {
+                                setTimeout(() => {
+                                    onAmbulanceDetected(detectionCount);
+                                }, 1000);
+                            }
+                        } else {
+                            showError('Video not found in response');
+                        }
+                    } else {
+                        // Display image
+                        const resultImage = document.getElementById('resultImage');
+                        if (!resultImage) {
+                            // Create image element if it doesn't exist
+                            const imgEl = document.createElement('img');
+                            imgEl.id = 'resultImage';
+                            imgEl.class = 'result-image';
+                            resultsSection.insertAdjacentElement('afterbegin', imgEl);
+                        }
+                        
+                        if (data.image_url) {
+                            document.getElementById('resultImage').src = data.image_url;
+                            document.getElementById('resultImage').style.display = 'block';
+                            if (resultVideo) resultVideo.style.display = 'none';
+                            
+                            const detectionCount = data.count || 0;
+                            const avgConfidence = data.avg_confidence || 0;
+                            
+                            // Update video overlay labels (also shown for images) with null checks
+                            try {
+                                const videoLabelCount = document.getElementById('videoLabelCount');
+                                const videoLabelConfidence = document.getElementById('videoLabelConfidence');
+                                const videoLabelTime = document.getElementById('videoLabelTime');
+                                const statusLabel = document.getElementById('videoStatusLabel');
+                                
+                                if (videoLabelCount) videoLabelCount.textContent = detectionCount;
+                                if (videoLabelConfidence) videoLabelConfidence.textContent = Math.round(avgConfidence) + '%';
+                                if (videoLabelTime) videoLabelTime.textContent = (data.processing_time || 0).toFixed(2) + 's';
+                                
+                                // Update video status label
+                                if (statusLabel) {
+                                    if (detectionCount > 0) {
+                                        statusLabel.style.background = 'rgba(231, 76, 60, 0.9)';
+                                        statusLabel.innerHTML = '<span style="width: 8px; height: 8px; background: white; border-radius: 50%; animation: blink 1s infinite;"></span><span>🚑 DETECTED</span>';
+                                    } else {
+                                        statusLabel.style.background = 'rgba(52, 152, 219, 0.9)';
+                                        statusLabel.innerHTML = '<span style="width: 8px; height: 8px; background: white; border-radius: 50%; animation: blink 1s infinite;"></span><span>✓ CLEAR</span>';
+                                    }
+                                }
+                            } catch(e) {
+                                // Silent error handling
+                            }
+                            
+                            // Update detection details (if stats elements exist)
+                            if (detectionsCount) {
+                                detectionsCount.textContent = `🖼️ Image Analysis Results`;
+                            }
+                            if (inFrameCount) {
+                                inFrameCount.textContent = detectionCount;
+                            }
+                            
+                            resultsSection.classList.add('show');
+                            
+                            // AUTOMATIC: Trigger traffic control when ambulances detected in image
+                            if (detectionCount > 0) {
+                                setTimeout(() => {
+                                    onAmbulanceDetected(detectionCount);
+                                }, 1000);
+                            }
+                        } else {
+                            showError('Image not found in response');
+                        }
+                    }
+                } else {
+                    showError(data.error || 'Detection failed. Please try again.');
+                }
+            } catch (err) {
+                showError('Error: ' + err.message);
+            } finally {
+                loading.classList.remove('show');
+                detectBtn.disabled = false;
+            }
+        }
+        
+        function playVideo() {
+            resultVideo.play();
+        }
+        
+        function pauseVideo() {
+            resultVideo.pause();
+        }
+        
+        function restartVideo() {
+            resultVideo.currentTime = 0;
+            resultVideo.play();
+        }
+        
+        function downloadVideo() {
+            if (videoUrl) {
+                const a = document.createElement('a');
+                a.href = videoUrl;
+                a.download = selectedFile.name;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
+        }
+        
+        function showError(message) {
+            error.textContent = message;
+            error.classList.add('show');
+        }
+        
+        // ============== AUTOMATIC TRAFFIC CONTROL SYSTEM ==============
+        let trafficState = {
+            activeRoads: 0,
+            greenWaves: 0,
+            tracking: false,
+            lastRoute: null,
+            ambulanceDetected: false,
+            ambulanceDirection: null,
+            activeDirections: new Set(),
+            routeHistory: []
+        };
+        
+        // Directions and their opposites
+        const directionMap = {
+            'NORTH': 'SOUTH',
+            'SOUTH': 'NORTH',
+            'EAST': 'WEST',
+            'WEST': 'EAST'
+        };
+        
+        // Simulate ambulance detection with direction inference
+        function getRandomAmbulanceDirection() {
+            const directions = ['NORTH', 'EAST', 'SOUTH', 'WEST'];
+            return directions[Math.floor(Math.random() * directions.length)];
+        }
+        
+        // Get destination based on ambulance origin
+        function getHospitalDestination(origin) {
+            const hospitals = ['NORTH', 'EAST', 'SOUTH', 'WEST'];
+            // Filter out the origin, pick randomly from remaining
+            const available = hospitals.filter(h => h !== origin);
+            return available[Math.floor(Math.random() * available.length)];
+        }
+        
+        // Auto-populate route planner when ambulance detected
+        function autoPopulateRoutePlanner(fromDirection, toHospital) {
+            const fromSelect = document.getElementById('tcFromRoad');
+            const toSelect = document.getElementById('tcToRoad');
+            
+            if (fromSelect && toSelect) {
+                // Set the FROM field to detected ambulance direction
+                fromSelect.value = fromDirection;
+                
+                // Set the TO field to random hospital destination
+                toSelect.value = toHospital;
+                
+                // Visual feedback
+                fromSelect.style.borderColor = '#e74c3c';
+                fromSelect.style.boxShadow = '0 0 8px rgba(231, 76, 60, 0.5)';
+                toSelect.style.borderColor = '#27ae60';
+                toSelect.style.boxShadow = '0 0 8px rgba(39, 174, 96, 0.5)';
+                
+                // Clear highlights after 2 seconds
+                setTimeout(() => {
+                    fromSelect.style.borderColor = '#ddd';
+                    fromSelect.style.boxShadow = 'none';
+                    toSelect.style.borderColor = '#ddd';
+                    toSelect.style.boxShadow = 'none';
+                }, 2000);
+            }
+        }
+        
+        // Get list of alternative routes for multiple ambulances
+        function getAlternativeRoutes(ambulanceDirections) {
+            const routes = [];
+            ambulanceDirections.forEach(direction => {
+                const hospital = getHospitalDestination(direction);
+                routes.push({
+                    from: direction,
+                    to: hospital,
+                    priority: ambulanceDirections.indexOf(direction)
+                });
+            });
+            return routes;
+        }
+        
+        // Display alternative routes in UI
+        function displayAlternativeRoutes(activeRoutes) {
+            const routeInfo = document.getElementById('tcRouteInfo');
+            if (!routeInfo || activeRoutes.length <= 1) return;
+            
+            let routesHTML = '<div style="margin-top: 10px; padding: 10px; background: #fff3cd; border-radius: 4px; border-left: 3px solid #f39c12;">';
+            routesHTML += '<div style="font-weight: 600; color: #f39c12; margin-bottom: 8px;">📍 Alternative Routes Available:</div>';
+            
+            const allRoutes = getAlternativeRoutes(activeRoutes);
+            allRoutes.forEach((route, index) => {
+                const arrow = route.from === 'NORTH' ? '⬆️' : route.from === 'SOUTH' ? '⬇️' : route.from === 'EAST' ? '➡️' : '⬅️';
+                const destArrow = route.to === 'NORTH' ? '⬆️' : route.to === 'SOUTH' ? '⬇️' : route.to === 'EAST' ? '➡️' : '⬅️';
+                routesHTML += '<div style="padding: 5px 0; font-size: 0.9em; color: #666;">';
+                routesHTML += `Route ${index + 1}: ${arrow} ${route.from} → ${destArrow} ${route.to}`;
+                routesHTML += '</div>';
+            });
+            
+            routesHTML += '</div>';
+            
+            const existingInfo = routeInfo.innerHTML;
+            routeInfo.innerHTML = existingInfo + routesHTML;
+        }
+        
+        // Automatically plan route based on detected ambulance
+        function autoActivateGreenWave(ambulanceDirection, hospitalDestination) {
+            const routeInfo = document.getElementById('tcRouteInfo');
+            
+            trafficState.lastRoute = { from: ambulanceDirection, to: hospitalDestination };
+            trafficState.ambulanceDetected = true;
+            trafficState.ambulanceDirection = ambulanceDirection;
+            trafficState.activeDirections.add(ambulanceDirection);
+            trafficState.activeDirections.add(hospitalDestination);
+            
+            routeInfo.innerHTML = `
+                <strong style="color: #e74c3c;">🚑 AMBULANCE ALERT!</strong><br>
+                ✅ Automatic route planned from <strong>${ambulanceDirection}</strong> to <strong>${hospitalDestination}</strong>.<br>
+                🟢 GREEN WAVE ACTIVATED for emergency vehicle!
+            `;
+            routeInfo.style.color = '#27ae60';
+            routeInfo.style.display = 'block';
+            
+            // Update traffic lights dynamically
+            updateTrafficLights(ambulanceDirection, hospitalDestination);
+            updateStatusDisplay();
+            trafficState.greenWaves += 1;
+            
+            // Store in history
+            trafficState.routeHistory.push({
+                timestamp: new Date().toLocaleTimeString(),
+                from: ambulanceDirection,
+                to: hospitalDestination
+            });
+            
+            // Auto-activate tracking
+            trafficState.tracking = true;
+            updateStatusDisplay();
+        }
+        
+        // Manual route planning with dropdown selection
+        function tcPlanRoute() {
+            const from = document.getElementById('tcFromRoad').value;
+            const to = document.getElementById('tcToRoad').value;
+            const routeInfo = document.getElementById('tcRouteInfo');
+            
+            if (!from || !to) {
+                routeInfo.textContent = '❌ Please select both origin and destination';
+                routeInfo.style.color = '#e74c3c';
+                routeInfo.style.display = 'block';
+                return;
+            }
+            
+            trafficState.lastRoute = { from, to };
+            trafficState.activeDirections.add(from);
+            trafficState.activeDirections.add(to);
+            
+            routeInfo.innerHTML = `✅ Route planned from <strong>${from}</strong> to <strong>${to}</strong>. Green wave activated!`;
+            routeInfo.style.color = '#27ae60';
+            routeInfo.style.display = 'block';
+            
+            updateTrafficLights(from, to);
+            updateStatusDisplay();
+            trafficState.greenWaves += 1;
+        }
+        
+        function updateTrafficLights(from, to) {
+            const directions = ['NORTH', 'EAST', 'SOUTH', 'WEST'];
+            directions.forEach(dir => {
+                const element = document.getElementById(`tcLight-${dir}`);
+                const parentDiv = element.parentElement;
+                
+                if (element) {
+                    if (dir === from || dir === to) {
+                        element.innerHTML = '🟢 Green';
+                        element.style.color = '#27ae60';
+                        parentDiv.style.background = '#e8f5e9';
+                        parentDiv.style.boxShadow = '0 0 15px rgba(76,175,80,0.3)';
+                    } else {
+                        element.innerHTML = '🔴 Red';
+                        element.style.color = '#e74c3c';
+                        parentDiv.style.background = '#ffebee';
+                        parentDiv.style.boxShadow = '0 0 15px rgba(244,67,54,0.3)';
+                    }
+                }
+            });
+        }
+        
+        function updateStatusDisplay() {
+            const activeCount = trafficState.activeDirections.size;
+            document.getElementById('tcActiveRoads').textContent = activeCount;
+            document.getElementById('tcGreenWaves').textContent = trafficState.greenWaves;
+            document.getElementById('tcAvgDelay').textContent = trafficState.greenWaves > 0 ? '2-3s' : '0s';
+            
+            const statusEl = document.getElementById('tcSystemStatus');
+            if (trafficState.tracking) {
+                statusEl.textContent = '🟢 Active';
+                statusEl.style.color = '#27ae60';
+            } else {
+                statusEl.textContent = 'Ready';
+                statusEl.style.color = '#e74c3c';
+            }
+        }
+        
+        function tcStartTracking() {
+            if (!trafficState.lastRoute) {
+                alert('Please plan a route first or wait for ambulance detection!');
+                return;
+            }
+            trafficState.tracking = true;
+            updateStatusDisplay();
+            alert('✅ Traffic tracking started!');
+        }
+        
+        function tcStopTracking() {
+            trafficState.tracking = false;
+            trafficState.ambulanceDetected = false;
+            trafficState.activeDirections.clear();
+            
+            // Reset lights to red
+            ['NORTH', 'EAST', 'SOUTH', 'WEST'].forEach(dir => {
+                const element = document.getElementById(`tcLight-${dir}`);
+                if (element) {
+                    element.innerHTML = '🔴 Red';
+                    element.style.color = '#e74c3c';
+                    element.parentElement.style.background = '#ffebee';
+                }
+            });
+            
+            updateStatusDisplay();
+            alert('⏹️ Traffic tracking stopped!');
+        }
+        
+        // Simulate ambulance detection when video is loaded
+        function onAmbulanceDetected(detectionCount) {
+            if (detectionCount > 0) {
+                // Automatically trigger traffic control when ambulance is detected
+                const ambulanceFrom = getRandomAmbulanceDirection();
+                const ambulanceTo = getHospitalDestination(ambulanceFrom);
+                autoActivateGreenWave(ambulanceFrom, ambulanceTo);
+            }
+        }
+        
+        // Initialize multi-direction upload handlers
+        document.addEventListener('DOMContentLoaded', function() {
+            // Setup type selector radio buttons
+            const typeOptions = document.querySelectorAll('input[name="detectionType"]');
+            typeOptions.forEach(option => {
+                option.addEventListener('change', function() {
+                    const detectionType = document.querySelector('input[name="detectionType"]:checked').value;
+                    const singleUploadSection = document.getElementById('singleUploadSection');
+                    const multiUploadSection = document.getElementById('multiDirectionUploadSection');
+                    
+                    if (detectionType === 'multi-direction') {
+                        singleUploadSection.style.display = 'none';
+                        multiUploadSection.style.display = 'block';
+                        setupMultiDirectionHandlers();
+                    } else {
+                        singleUploadSection.style.display = 'block';
+                        multiUploadSection.style.display = 'none';
+                    }
+                });
+            });
+            
+            // Setup multi-direction file input handlers
+            setupMultiDirectionHandlers();
+        });
+        
+        function setupMultiDirectionHandlers() {
+            const directions = ['North', 'South', 'East', 'West'];
+            
+            directions.forEach(direction => {
+                const fileInput = document.getElementById('file' + direction);
+                const preview = document.getElementById('preview' + direction);
+                const status = document.getElementById('status' + direction);
+                
+                if (!fileInput) return;
+                
+                fileInput.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = function(event) {
+                            if (file.type.startsWith('video/')) {
+                                preview.innerHTML = '<video style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;" controls muted><source src="' + event.target.result + '"></video>';
+                            } else {
+                                preview.innerHTML = '<img src="' + event.target.result + '" style="width: 100%; height: 100%; object-fit: cover; border-radius: 6px;">';
+                            }
+                            status.textContent = '✅ Ready: ' + file.name;
+                            status.style.color = '#27ae60';
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+                
+                // Drag and drop
+                preview.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    preview.style.backgroundColor = '#d4e9f0';
+                });
+                
+                preview.addEventListener('dragleave', function(e) {
+                    e.preventDefault();
+                    preview.style.backgroundColor = 'white';
+                });
+                
+                preview.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    preview.style.backgroundColor = 'white';
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        fileInput.files = files;
+                        const event = new Event('change', { bubbles: true });
+                        fileInput.dispatchEvent(event);
+                    }
+                });
+            });
+        }
+        
+        async function detectMultiDirection() {
+            const fileInputs = {
+                'NORTH': document.getElementById('fileNorth'),
+                'SOUTH': document.getElementById('fileSouth'),
+                'EAST': document.getElementById('fileEast'),
+                'WEST': document.getElementById('fileWest')
+            };
+            
+            const statusMap = {
+                'NORTH': 'statusNorth',
+                'SOUTH': 'statusSouth',
+                'EAST': 'statusEast',
+                'WEST': 'statusWest'
+            };
+            
+            // Check if all files are selected (image or video)
+            let allFilesSelected = true;
+            for (const [dir, input] of Object.entries(fileInputs)) {
+                if (!input.files || input.files.length === 0) {
+                    const statusEl = document.getElementById(statusMap[dir]);
+                    if (statusEl) {
+                        statusEl.textContent = '❌ File required';
+                        statusEl.style.color = '#e74c3c';
+                    }
+                    allFilesSelected = false;
+                }
+            }
+
+            if (!allFilesSelected) {
+                showError('Please upload files (image or video) for all 4 directions');
+                return;
+            }
+            
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const resultsSection = document.getElementById('resultsSection');
+            
+            loading.style.display = 'block';
+            error.style.display = 'none';
+            resultsSection.style.display = 'none';
+            document.getElementById('loadingText').textContent = 'Analyzing all 4 directions... Please wait...';
+            
+            try {
+                const formData = new FormData();
+                // Use uppercase field names to match server-side expectations
+                formData.append('NORTH', fileInputs['NORTH'].files[0]);
+                formData.append('SOUTH', fileInputs['SOUTH'].files[0]);
+                formData.append('EAST', fileInputs['EAST'].files[0]);
+                formData.append('WEST', fileInputs['WEST'].files[0]);
+                
+                const response = await fetch('/upload-multi-direction', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Server returned ' + response.status);
+                }
+                
+                const result = await response.json();
+                
+                loading.style.display = 'none';
+                displayMultiDirectionResults(result);
+                
+            } catch (err) {
+                loading.style.display = 'none';
+                showError('Error analyzing images: ' + err.message);
+            }
+        }
+        
+        function displayMultiDirectionResults(result) {
+            const resultsSection = document.getElementById('resultsSection');
+            
+            let detailsHTML = '<div class="detection-stats"><div class="stats-header">🎯 Multi-Direction Detection Results</div><div class="stats-content" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">';
+            
+            const directions = ['NORTH', 'SOUTH', 'EAST', 'WEST'];
+            const arrows = {'NORTH': '⬆️', 'SOUTH': '⬇️', 'EAST': '➡️', 'WEST': '⬅️'};
+            
+            let totalAmbulances = result.total_ambulances || 0;
+            let activeRoutes = result.active_routes || [];
+            
+            directions.forEach(dir => {
+                const hasAmbulance = result.ambulance_detection_map && result.ambulance_detection_map[dir];
+                const emoji = hasAmbulance ? '🚑' : '✅';
+                const status = hasAmbulance ? 'AMBULANCE DETECTED' : 'No ambulance';
+                const color = hasAmbulance ? '#e74c3c' : '#27ae60';
+                
+                detailsHTML += '<div style="padding: 10px; background: ' + (hasAmbulance ? '#ffe8e8' : '#e8f8f0') + '; border-left: 4px solid ' + color + '; border-radius: 4px;">';
+                detailsHTML += '<div style="font-weight: 600; color: ' + color + ';">' + arrows[dir] + ' ' + dir + '</div>';
+                detailsHTML += '<div style="font-size: 0.9em; color: #666;">' + emoji + ' ' + status + '</div>';
+                detailsHTML += '</div>';
+            });
+            
+            detailsHTML += '</div></div>';
+            
+            // Add detection statistics
+            detailsHTML += '<div style="margin-top: 15px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">';
+            detailsHTML += '<div class="stat-box"><div class="stat-value">' + totalAmbulances + '</div><div class="stat-label">Total Ambulances</div></div>';
+            detailsHTML += '<div class="stat-box"><div class="stat-value">' + activeRoutes.length + '</div><div class="stat-label">Active Routes</div></div>';
+            detailsHTML += '<div class="stat-box"><div class="stat-value">' + directions.filter(d => result.ambulance_detection_map && result.ambulance_detection_map[d]).length + '</div><div class="stat-label">Directions with Ambulance</div></div>';
+            detailsHTML += '</div>';
+            
+            // Show result images (use per-direction image_url from detection_results)
+            if (result.detection_results) {
+                detailsHTML += '<div style="margin-top: 20px;"><h3 style="color: #2c3e50; margin-bottom: 10px;">📸 Detection Results</h3>';
+                detailsHTML += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">';
+                
+                directions.forEach(dir => {
+                    const dirResult = result.detection_results[dir];
+                    const imagePath = dirResult && dirResult.image_url;
+                    if (imagePath) {
+                        detailsHTML += '<div style="text-align: center;"><div style="font-weight: 600; margin-bottom: 5px;">' + arrows[dir] + ' ' + dir + '</div>';
+                        detailsHTML += '<img src="' + imagePath + '?t=' + Date.now() + '" style="width: 100%; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">';
+                        detailsHTML += '</div>';
+                    }
+                });
+                
+                detailsHTML += '</div></div>';
+            }
+            
+            // Update traffic control based on detection
+            if (activeRoutes.length > 0) {
+                detailsHTML += '<div style="margin-top: 20px; background: #e8f4f8; padding: 15px; border-left: 4px solid #3498db; border-radius: 4px;">';
+                detailsHTML += '<div style="font-weight: 600; color: #2c3e50; margin-bottom: 8px;">🚦 Automatic Traffic Control Activated</div>';
+                detailsHTML += '<div style="color: #666; font-size: 0.9em;">Active Routes: ' + activeRoutes.join(', ') + '</div>';
+                detailsHTML += '</div>';
+                
+                // Trigger automatic traffic control with route linking
+                if (activeRoutes.length > 0) {
+                    // For each detected ambulance direction, plan a route
+                    activeRoutes.forEach((primaryRoute, index) => {
+                        const hospital = getHospitalDestination(primaryRoute);
+                        if (index === 0) {
+                            // Activate first route immediately
+                            autoActivateGreenWave(primaryRoute, hospital);
+                            // Auto-populate route planner with detected route
+                            autoPopulateRoutePlanner(primaryRoute, hospital);
+                        } else {
+                            // Log additional routes (disabled for cleaner console)
+                        }
+                    });
+                }
+            }
+            
+            // Ensure there is a container inside resultsSection for multi-direction stats,
+            // placed just above the Traffic Control System section
+            let container = document.getElementById('multiDirectionStats');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'multiDirectionStats';
+                const tcHeading = resultsSection.querySelector('h3');
+                if (tcHeading) {
+                    resultsSection.insertBefore(container, tcHeading);
+                } else {
+                    resultsSection.appendChild(container);
+                }
+            }
+            container.innerHTML = detailsHTML;
+            resultsSection.style.display = 'block';
+        }
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+        }
+    </script>
+</body>
+</html>
